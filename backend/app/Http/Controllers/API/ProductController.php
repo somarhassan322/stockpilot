@@ -9,8 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    //
-    public function index() 
+    public function index()
     {
         $products = Product::with('category')->latest()->get();
 
@@ -19,17 +18,17 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request) 
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'category_id' => ['required', 'exists:categories,id'],
-            'name'=> ['required', 'string', 'max:255'],
-            'slug'=> ['required', 'string', 'max:255', 'unique:categories,slug'],
-            'description'=> ['nullable', 'string'],
-            'price'=> ['required', 'numeric', 'min:0'],
-            'stock'=> ['required', 'integer', 'min:0'],
-            'image'=> ['required', 'image', 'max:2048'],
-            'status'=> ['required', 'boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', 'unique:products,slug'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'image' => ['required', 'image', 'max:2048'],
+            'status' => ['required', 'boolean'],
         ]);
 
         if ($request->hasFile('image')) {
@@ -51,7 +50,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         return response()->json([
-            'data' => $product-> load('category'),
+            'data' => $product->load('category'),
         ]);
     }
 
@@ -59,21 +58,22 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'category_id' => ['required', 'exists:categories,id'],
-            'name'=> ['required', 'string', 'max:255'],
-            'slug'=> ['required', 'string', 'max:255', 'unique:products,slug,' . $product->id],
-            'description'=> ['nullable', 'string'],
-            'price'=> ['required', 'numeric', 'min:0'],
-            'stock'=> ['required', 'integer', 'min:0'],
-            'image'=> ['nullable', 'image', 'max:2048'],
-            'status'=> ['required', 'boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', 'unique:products,slug,' . $product->id],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'image' => ['nullable', 'image', 'max:2048'],
+            'status' => ['required', 'boolean'],
         ]);
 
         if ($request->hasFile('image')) {
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
+
             $validated['image'] = $request->file('image')->storeAs(
-                'product',
+                'products',
                 $validated['slug'] . '.' . $request->file('image')->extension(),
                 'public'
             );
@@ -82,7 +82,7 @@ class ProductController extends Controller
         $product->update($validated);
 
         return response()->json([
-            'message'=> 'Product updated successfully.',
+            'message' => 'Product updated successfully.',
             'data' => $product->load('category'),
         ]);
     }
@@ -94,6 +94,7 @@ class ProductController extends Controller
         }
 
         $product->delete();
+
         return response()->json([
             'message' => 'Product deleted successfully.',
         ]);
