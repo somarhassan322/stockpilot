@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
-use Illuminate\Http\Request;
-
 class AuthController extends Controller
 {
-    //
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -21,18 +19,18 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (! $user || ! Hash::check($validated['password'], $user->password)){
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['this provided credentials are incorrect.'],
+                'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        $token = $user->createToken('admin-token')->plainTextToken;
+        $token = $user->createToken('stockpilot-token')->plainTextToken;
 
         return response()->json([
-        'message' => 'Login successfull.',
-        'token' => $token,
-        'user' => $user,
+            'message' => 'Login successful.',
+            'token' => $token,
+            'user' => $user,
         ]);
     }
 
@@ -46,10 +44,9 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-         
+
         return response()->json([
             'message' => 'Logged out successfully.',
         ]);
-         
     }
 }
