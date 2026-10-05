@@ -4,6 +4,7 @@ import {
   deleteProduct,
   getCategories,
   getProducts,
+  STORAGE_URL,
   updateProduct,
 } from './api';
 
@@ -18,7 +19,7 @@ const emptyForm = {
   status: true,
 };
 
-function ProductManager({ token }) {
+function ProductManager({ token, isAdmin }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -29,19 +30,25 @@ function ProductManager({ token }) {
   const nameInputRef = useRef(null);
 
   async function loadProductData() {
-    const [productResponse, categoryResponse] = await Promise.all([
-      getProducts(token),
-      getCategories(token),
-    ]);
+    try {
+      const [productResponse, categoryResponse] = await Promise.all([
+        getProducts(token),
+        getCategories(token),
+      ]);
 
-    const categoryList = categoryResponse.data || [];
+      const categoryList = categoryResponse.data || [];
 
-    setProducts(productResponse.data || []);
-    setCategories(categoryList);
-    setForm((currentForm) => ({
-      ...currentForm,
-      category_id: currentForm.category_id || categoryList[0]?.id || '',
-    }));
+      setProducts(productResponse.data || []);
+      setCategories(categoryList);
+
+      setForm((currentForm) => ({
+        ...currentForm,
+        category_id:
+          currentForm.category_id || categoryList[0]?.id || '',
+      }));
+    } catch (error) {
+      setError(error.message);
+    }
   }
 
   useEffect(() => {
@@ -86,6 +93,7 @@ function ProductManager({ token }) {
     setError('');
     setMessage('');
     setEditingId(product.id);
+
     setForm({
       category_id: product.category_id,
       name: product.name,
@@ -127,9 +135,14 @@ function ProductManager({ token }) {
   async function handleDelete(id) {
     setError('');
     setMessage('');
-    await deleteProduct(id, token);
-    setMessage('Product deleted successfully.');
-    await loadProductData();
+
+    try {
+      await deleteProduct(id, token);
+      setMessage('Product deleted successfully.');
+      await loadProductData();
+    } catch (error) {
+      setError(error.message);
+    }
   }
 
   return (
@@ -141,101 +154,167 @@ function ProductManager({ token }) {
         </div>
       </header>
 
+      {error && <p className="alert error">{error}</p>}
+      {message && <p className="alert success">{message}</p>}
+
       <div className="content-grid product-grid">
-        <form className="panel category-form product-form" onSubmit={handleSaveProduct}>
-          <h2>{editingId ? 'Edit product' : 'Create product'}</h2>
-
-          <label htmlFor="category_id">Category</label>
-          <select
-            id="category_id"
-            value={form.category_id}
-            onChange={(event) => setForm({ ...form, category_id: event.target.value })}
+        {isAdmin && (
+          <form
+            className="panel category-form product-form"
+            onSubmit={handleSaveProduct}
           >
-            {categories.map((category) => (
-              <option value={category.id} key={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+            <h2>{editingId ? 'Edit product' : 'Create product'}</h2>
 
-          <label htmlFor="product_name">Name</label>
-          <input
-            id="product_name"
-            ref={nameInputRef}
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            placeholder="Wireless Mouse"
-          />
+            <label htmlFor="category_id">Category</label>
+            <select
+              id="category_id"
+              value={form.category_id}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  category_id: event.target.value,
+                })
+              }
+              required
+            >
+              <option value="">Select a category</option>
 
-          <label htmlFor="product_slug">Slug</label>
-          <input
-            id="product_slug"
-            value={form.slug}
-            onChange={(event) => setForm({ ...form, slug: event.target.value })}
-            placeholder="wireless-mouse"
-          />
+              {categories.map((category) => (
+                <option value={category.id} key={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
 
-          <label htmlFor="product_description">Description</label>
-          <textarea
-            id="product_description"
-            value={form.description}
-            onChange={(event) => setForm({ ...form, description: event.target.value })}
-            placeholder="Compact wireless mouse"
-          />
-
-          <div className="form-row">
-            <div>
-              <label htmlFor="price">Price</label>
-              <input
-                id="price"
-                type="number"
-                value={form.price}
-                onChange={(event) => setForm({ ...form, price: event.target.value })}
-                placeholder="49.99"
-              />
-            </div>
-            <div>
-              <label htmlFor="stock">Stock</label>
-              <input
-                id="stock"
-                type="number"
-                value={form.stock}
-                onChange={(event) => setForm({ ...form, stock: event.target.value })}
-                placeholder="30"
-              />
-            </div>
-          </div>
-
-          <label htmlFor="image">Image</label>
-          <input
-            id="image"
-            type="file"
-            onChange={(event) => setForm({ ...form, image: event.target.files[0] })}
-          />
-
-          <label className="checkbox-row">
+            <label htmlFor="product_name">Name</label>
             <input
-              type="checkbox"
-              checked={form.status}
-              onChange={(event) => setForm({ ...form, status: event.target.checked })}
+              id="product_name"
+              ref={nameInputRef}
+              value={form.name}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  name: event.target.value,
+                })
+              }
+              placeholder="Wireless Mouse"
+              required
             />
-            Active product
-          </label>
 
-          {error && <p className="alert error">{error}</p>}
-          {message && <p className="alert success">{message}</p>}
+            <label htmlFor="product_slug">Slug</label>
+            <input
+              id="product_slug"
+              value={form.slug}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  slug: event.target.value,
+                })
+              }
+              placeholder="wireless-mouse"
+              required
+            />
 
-          <div className="button-row">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : editingId ? 'Update Product' : 'Create Product'}
-            </button>
-            {editingId && (
-              <button type="button" className="secondary-button" onClick={resetForm}>
-                Cancel
+            <label htmlFor="product_description">Description</label>
+            <textarea
+              id="product_description"
+              value={form.description}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  description: event.target.value,
+                })
+              }
+              placeholder="Compact wireless mouse"
+            />
+
+            <div className="form-row">
+              <div>
+                <label htmlFor="price">Price</label>
+                <input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      price: event.target.value,
+                    })
+                  }
+                  placeholder="49.99"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="stock">Stock</label>
+                <input
+                  id="stock"
+                  type="number"
+                  min="0"
+                  value={form.stock}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      stock: event.target.value,
+                    })
+                  }
+                  placeholder="30"
+                  required
+                />
+              </div>
+            </div>
+
+            <label htmlFor="image">Image</label>
+            <input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  image: event.target.files?.[0] || null,
+                })
+              }
+            />
+
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={form.status}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    status: event.target.checked,
+                  })
+                }
+              />
+              Active product
+            </label>
+
+            <div className="button-row">
+              <button type="submit" disabled={saving}>
+                {saving
+                  ? 'Saving...'
+                  : editingId
+                    ? 'Update Product'
+                    : 'Create Product'}
               </button>
-            )}
-          </div>
-        </form>
+
+              {editingId && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        )}
 
         <section className="panel product-list">
           <div className="list-header">
@@ -243,35 +322,56 @@ function ProductManager({ token }) {
             <span>{products.length} total</span>
           </div>
 
-          {products.map((product) => (
-            <article className="product-row" key={product.id}>
-              <div className="product-info">
-                <div className="product-thumb">
-                  {product.image ? (
-                    <img src={`http://127.0.0.1:8000/storage/${product.image}`} alt={product.name} />
-                  ) : (
-                    <span>No image</span>
-                  )}
+          {products.length === 0 ? (
+            <p className="muted">No products found.</p>
+          ) : (
+            products.map((product) => (
+              <article className="product-row" key={product.id}>
+                <div className="product-info">
+                  <div className="product-thumb">
+                    {product.image ? (
+                      <img
+                        src={`${STORAGE_URL}/${product.image}`}
+                        alt={product.name}
+                      />
+                    ) : (
+                      <span>No image</span>
+                    )}
+                  </div>
+
+                  <div>
+                    <strong>{product.name}</strong>
+                    <span>{product.category?.name || 'Uncategorized'}</span>
+                  </div>
                 </div>
-                <div>
-                  <strong>{product.name}</strong>
-                  <span>{product.category?.name}</span>
+
+                <div className="price-stock">
+                  <span>${product.price}</span>
+                  <small>{product.stock} in stock</small>
                 </div>
-              </div>
-              <div className="price-stock">
-                <span>${product.price}</span>
-                <small>{product.stock} in stock</small>
-              </div>
-              <div className="row-actions">
-                <button type="button" className="secondary-button" onClick={() => handleEdit(product)}>
-                  Edit
-                </button>
-                <button type="button" className="danger-button" onClick={() => handleDelete(product.id)}>
-                  Delete
-                </button>
-              </div>
-            </article>
-          ))}
+
+                {isAdmin && (
+                  <div className="row-actions">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleEdit(product)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="danger-button"
+                      onClick={() => handleDelete(product.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))
+          )}
         </section>
       </div>
     </section>

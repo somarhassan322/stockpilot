@@ -24,7 +24,13 @@ const emptySummary = {
   inventoryValue: 0,
 };
 
-function Dashboard({ token, onOpenProducts, onLogout }) {
+function Dashboard({
+  token,
+  user,
+  isAdmin,
+  onOpenProducts,
+  onLogout,
+}) {
   const [summary, setSummary] = useState(emptySummary);
   const [recentProducts, setRecentProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,11 +48,24 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
 
       const categories = categoryResponse.data || [];
       const products = productResponse.data || [];
-      const activeProducts = products.filter((product) => product.status).length;
-      const stock = products.reduce((total, product) => total + Number(product.stock || 0), 0);
-      const inventoryValue = products.reduce((total, product) => {
-        return total + Number(product.price || 0) * Number(product.stock || 0);
-      }, 0);
+
+      const activeProducts = products.filter(
+        (product) => product.status
+      ).length;
+
+      const stock = products.reduce(
+        (total, product) =>
+          total + Number(product.stock || 0),
+        0
+      );
+
+      const inventoryValue = products.reduce(
+        (total, product) =>
+          total +
+          Number(product.price || 0) *
+            Number(product.stock || 0),
+        0
+      );
 
       setSummary({
         categories: categories.length,
@@ -55,6 +74,7 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
         stock,
         inventoryValue,
       });
+
       setRecentProducts(products.slice(0, 5));
     } catch (error) {
       setError(error.message);
@@ -70,10 +90,30 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
   }, [token]);
 
   const statCards = [
-    { label: 'Categories', value: summary.categories, note: 'Product groups', Icon: Layers },
-    { label: 'Products', value: summary.products, note: 'Catalog items', Icon: ShoppingBag },
-    { label: 'Active Products', value: summary.activeProducts, note: 'Visible in store', Icon: PackageCheck },
-    { label: 'Stock Units', value: summary.stock, note: 'Total inventory', Icon: Boxes },
+    {
+      label: 'Categories',
+      value: summary.categories,
+      note: 'Product groups',
+      Icon: Layers,
+    },
+    {
+      label: 'Products',
+      value: summary.products,
+      note: 'Catalog items',
+      Icon: ShoppingBag,
+    },
+    {
+      label: 'Active Products',
+      value: summary.activeProducts,
+      note: 'Active catalog items',
+      Icon: PackageCheck,
+    },
+    {
+      label: 'Stock Units',
+      value: summary.stock,
+      note: 'Total inventory',
+      Icon: Boxes,
+    },
   ];
 
   return (
@@ -82,17 +122,34 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
         <div>
           <p className="eyebrow">Dashboard</p>
           <h1>StockPilot Overview</h1>
+          <p className="muted">
+            Welcome back, {user?.name || 'User'}.
+          </p>
         </div>
+
         <div className="dashboard-actions">
-          <button type="button" onClick={onOpenProducts}>
-            <PackagePlus size={18} />
-            Add Product
-          </button>
-          <button type="button" className="secondary-button" onClick={loadDashboard}>
+          {isAdmin && (
+            <button type="button" onClick={onOpenProducts}>
+              <PackagePlus size={18} />
+              Add Product
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={loadDashboard}
+            disabled={loading}
+          >
             <RefreshCw size={18} />
-            Refresh
+            {loading ? 'Refreshing...' : 'Refresh'}
           </button>
-          <button type="button" className="secondary-button" onClick={onLogout}>
+
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={onLogout}
+          >
             <LogOut size={18} />
             Log Out
           </button>
@@ -100,14 +157,19 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
       </header>
 
       {error && <p className="alert error">{error}</p>}
-      {loading && <p className="panel muted">Loading dashboard...</p>}
 
-      <section className="dashboard-grid" aria-label="Dashboard summary">
+      <section
+        className="dashboard-grid"
+        aria-label="Dashboard summary"
+      >
         {statCards.map((stat) => {
           const Icon = stat.Icon;
 
           return (
-            <article className="dashboard-card" key={stat.label}>
+            <article
+              className="dashboard-card"
+              key={stat.label}
+            >
               <Icon size={24} />
               <span>{stat.label}</span>
               <strong>{stat.value}</strong>
@@ -115,11 +177,14 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
             </article>
           );
         })}
+
         <article className="dashboard-card highlight-card">
           <DollarSign size={24} />
           <span>Inventory Value</span>
-          <strong>{moneyFormatter.format(summary.inventoryValue)}</strong>
-          <small>Based on product price and stock</small>
+          <strong>
+            {moneyFormatter.format(summary.inventoryValue)}
+          </strong>
+          <small>Price × current stock</small>
         </article>
       </section>
 
@@ -130,22 +195,50 @@ function Dashboard({ token, onOpenProducts, onLogout }) {
             <span>{recentProducts.length} shown</span>
           </div>
 
-          <div className="recent-table">
-            {recentProducts.map((product) => (
-              <div className="recent-row" key={product.id}>
-                <strong>{product.name}</strong>
-                <span>{product.category?.name || 'No category'}</span>
-                <span>{moneyFormatter.format(Number(product.price || 0))}</span>
-                <small>{product.stock} in stock</small>
-              </div>
-            ))}
-          </div>
+          {recentProducts.length === 0 ? (
+            <p className="muted">No products available yet.</p>
+          ) : (
+            <div className="recent-table">
+              {recentProducts.map((product) => (
+                <div
+                  className="recent-row"
+                  key={product.id}
+                >
+                  <strong>{product.name}</strong>
+
+                  <span>
+                    {product.category?.name || 'No category'}
+                  </span>
+
+                  <span>
+                    {moneyFormatter.format(
+                      Number(product.price || 0)
+                    )}
+                  </span>
+
+                  <small>
+                    {product.stock} in stock
+                  </small>
+                </div>
+              ))}
+            </div>
+          )}
         </article>
 
         <aside className="panel final-note">
-          <p className="eyebrow">Final polish</p>
-          <h2>Full stack flow is complete</h2>
-          <p>React talks to Laravel, Laravel validates and stores data, and MySQL keeps the inventory records organized.</p>
+          <p className="eyebrow">StockPilot</p>
+
+          <h2>
+            {isAdmin
+              ? 'Inventory management'
+              : 'Inventory overview'}
+          </h2>
+
+          <p>
+            {isAdmin
+              ? 'Manage categories and products from one place while keeping inventory data organized.'
+              : 'Review product and inventory information with read-only access.'}
+          </p>
         </aside>
       </section>
     </section>

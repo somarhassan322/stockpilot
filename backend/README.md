@@ -1,59 +1,234 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# StockPilot Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The Laravel REST API backend for **StockPilot**, an inventory management application.
 
-## About Laravel
+The backend provides authentication, role-based authorization, category management, product management, and product image storage for the StockPilot frontend.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* RESTful API
+* Authentication with Laravel Sanctum
+* Role-based authorization
+* Admin and regular user roles
+* Category management
+* Product management
+* Product image uploads
+* Product and category validation
+* Protected API endpoints
+* MySQL database integration
+* Automated feature tests
+* Database seeding for the initial administrator
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+* **Laravel**
+* **PHP**
+* **Laravel Sanctum**
+* **MySQL**
+* **Eloquent ORM**
+* **PHPUnit**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Project Structure
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```text
+backend/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   └── Api/
+│   │   └── Middleware/
+│   ├── Models/
+│   └── Providers/
+├── database/
+│   ├── factories/
+│   ├── migrations/
+│   └── seeders/
+├── routes/
+│   ├── api.php
+│   ├── console.php
+│   └── web.php
+├── storage/
+├── tests/
+├── .env.example
+├── artisan
+├── composer.json
+└── phpunit.xml
+```
 
-## Laravel Sponsors
+## API Endpoints
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Health
 
-### Premium Partners
+```text
+GET /api/health
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Returns the current API status.
 
-## Contributing
+### Authentication
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```text
+POST /api/login
+GET  /api/me
+POST /api/logout
+```
 
-## Code of Conduct
+Authentication uses Laravel Sanctum personal access tokens.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Categories
 
-## Security Vulnerabilities
+Authenticated users can view categories:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```text
+GET /api/categories
+GET /api/categories/{category}
+```
 
-## License
+Administrators can manage categories:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```text
+POST   /api/categories
+PUT    /api/categories/{category}
+DELETE /api/categories/{category}
+```
+
+### Products
+
+Authenticated users can view products:
+
+```text
+GET /api/products
+GET /api/products/{product}
+```
+
+Administrators can manage products:
+
+```text
+POST   /api/products
+PUT    /api/products/{product}
+DELETE /api/products/{product}
+```
+
+Product creation and updates support image uploads.
+
+## Authorization
+
+StockPilot uses two user roles:
+
+* `admin`
+* `user`
+
+Authenticated users can view inventory data.
+
+Only administrators can create, update, and delete products and categories.
+
+Administrative access is enforced on the backend through dedicated middleware, so permissions are not dependent only on frontend controls.
+
+## Getting Started
+
+### 1. Install PHP dependencies
+
+```bash
+composer install
+```
+
+### 2. Configure the environment
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Generate the Laravel application key:
+
+```bash
+php artisan key:generate
+```
+
+Configure the database and administrator credentials in `.env`.
+
+Example:
+
+```env
+APP_NAME=StockPilot
+
+DB_DATABASE=StockPilotDB
+DB_USERNAME=your_database_user
+DB_PASSWORD=your_database_password
+
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_secure_password
+```
+
+Do not commit `.env` or real credentials to the repository.
+
+### 3. Run database migrations
+
+```bash
+php artisan migrate
+```
+
+### 4. Create the administrator
+
+Run the database seeder:
+
+```bash
+php artisan db:seed
+```
+
+The administrator account is created using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` values from `.env`.
+
+### 5. Configure product image storage
+
+Create the public storage link:
+
+```bash
+php artisan storage:link
+```
+
+### 6. Start the development server
+
+```bash
+php artisan serve
+```
+
+The API will normally be available at:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Testing
+
+Run the complete test suite:
+
+```bash
+php artisan test
+```
+
+The project includes feature tests covering administrator authorization.
+
+## Security
+
+The API uses Laravel Sanctum for authentication and middleware-based authorization for administrative operations.
+
+Sensitive configuration values are stored in environment variables and should never be committed to the repository.
+
+The application also validates incoming product and category data before storing it in the database.
+
+## Project Status
+
+StockPilot is a portfolio project focused on practical full-stack development, REST API design, authentication, authorization, database management, file storage, and application security.
+
+## Frontend
+
+The React frontend is located in the `frontend/` directory.
+
+It communicates with this Laravel API to provide the StockPilot inventory management interface.
+
+## Author
+
+**Somar Hassn**
+
+IT Engineering — Cybersecurity

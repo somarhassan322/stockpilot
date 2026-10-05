@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,15 +14,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $adminEmail = env('ADMIN_EMAIL');
+        $adminPassword = env('ADMIN_PASSWORD');
+
+        if (! $adminEmail || ! $adminPassword) {
+            throw new RuntimeException(
+                'ADMIN_EMAIL and ADMIN_PASSWORD must be configured in the environment.'
+            );
+        }
+
         User::updateOrCreate(
             [
-                'email' => env('ADMIN_EMAIL', 'admin@stockpilot.test'),
+                'email' => $adminEmail,
             ],
             [
                 'name' => 'StockPilot Admin',
-                'password' => Hash::make(
-                    env('ADMIN_PASSWORD', 'change-me')
-                ),
+                'password' => Hash::make($adminPassword),
                 'role' => 'admin',
             ]
         );
